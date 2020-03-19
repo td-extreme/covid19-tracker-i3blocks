@@ -79,10 +79,10 @@ def main():
         try:
             print("[*] Updated stats at:", datetime.datetime.now())
             f = open("log.txt", "a")
-            f.write("\nUK C: " + newstats[0] + " (+" + str(difference[0]) + ")" +
-            " UK D: " + newstats[1] + " (+" + str(difference[1]) + ")" +
-            " WW C: " + newstats[2] + " (+" + str(difference[2]) + ")" +
-            " WW D: " + newstats[3] + " (+" + str(difference[3]) + ")")
+            status_line = "\nUK C: {0} ({1}) UK D: {2} ({3}) WW C: {4} ({5}) WW D: {6} ({7})"
+            formated_status_line = status_line.format(newstats[0], str(difference[0]), newstats[1], str(difference[1]), newstats[2], str(difference[2]), newstats[3], str(difference[3])).replace("\n", "")
+            f.write("\n")
+            f.write(formated_status_line)
             f.close()
 
         except Exception as e:
