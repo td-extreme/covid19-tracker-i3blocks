@@ -1,95 +1,56 @@
+#!/usr/bin/env python3
 import time
 import re
 import requests
+import argparse
 from bs4 import BeautifulSoup
-import datetime
+from optparse import OptionParser
+ 
+refreshRate = 300
+baseUrl = "https://www.worldometers.info/coronavirus/"
+country = "country/"
 
-def getStats():
-    url = "https://www.worldometers.info/coronavirus/country/uk/"
-    url2 = "https://www.worldometers.info/coronavirus/"
+def getStatsForCountry(countryCode):
+    if not countryCode or countryCode == "ww":
+        return getStatusForUrl(baseUrl)
+    return getStatusForUrl(baseUrl + country + countryCode)
 
-    # Get response from first URL which contains data about UK cases and deaths
-    print("[!] Getting response from URL 1")
-    startTime = time.time()
+def getStatusForUrl(url):
     response = requests.get(url)
-    print("[!] Time taken to retrieve response", round((time.time() - startTime), 2))
-
-    # Get response from second URL which contains worldwide cases and deaths
-    print("[!] Getting response from URL 2")
-    startTime = time.time()
-    response2 = requests.get(url2)
-    print("[!] Time taken to retrieve response", round((time.time() - startTime), 2))
-
-    # Use BeautifulSoup library to parse the URLs we just retrieved
     soup = BeautifulSoup(response.text, "html.parser")
-    soup2 = BeautifulSoup(response2.text, "html.parser")
 
-    # Create empty array called stats
-    stats = []
-
-    # For each statement to catch all lines of code that contain h1 tag
+    infection_count = death_count = -1
     for el in soup.findAll('h1'):
         if "Coronavirus" in str(el):
-            stats.append(re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", ""))
+            infection_count = re.sub("\D", "", re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", "")).replace("\n", "")
         elif "Deaths" in str(el):
-            stats.append(re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", ""))
+            death_count = re.sub("\D", "", re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", "")).replace("\n", "")
 
-    for el in soup2.findAll('h1'):
-        if "Coronavirus" in str(el):
-            stats.append(re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", ""))
-        if "Deaths" in str(el):
-            stats.append(re.sub('<[^<]+?>', '', str(el.find_next_sibling())).replace(" ", ""))
+    return (infection_count, death_count)
 
-    return stats
-
+def write_stats(label, infection_count, death_count):
+    if not label:
+      label = ""
+    return "{0} c: {1} d: {2} ".format(label, infection_count, death_count)
 
 def main():
-    difference = [0] * 4
+    parser = argparse.ArgumentParser(description='Optional label countryCode')
+    parser.add_argument('country', type=str, nargs='?',
+                        help='country code')
+    parser.add_argument('label', type=str, nargs='?',
+                        help='label')
 
-    while True:
-
-        try:
-            oldstats = newstats
-
-        except:
-            print("start")
-
-        try:
-            newstats = getStats()
-
-        except Exception as e:
-            print("[!] Error retrieving stats; website most likely denied request. Reattempting in 60 seconds")
-            time.sleep(60)
-            try:
-                newstats = getStats()
-            except Exception as e:
-                print("[!] Error retrieving second time; waiting 2m50s then running again")
-                time.sleep(150)
-                continue
-
-        try:
-            difference[0] += (int(re.sub("\D", "", newstats[0])) - int(re.sub("\D", "", oldstats[0])))
-            difference[1] += (int(re.sub("\D", "", newstats[1])) - int(re.sub("\D", "", oldstats[1])))
-            difference[2] += (int(re.sub("\D", "", newstats[2])) - int(re.sub("\D", "", oldstats[2])))
-            difference[3] += (int(re.sub("\D", "", newstats[3])) - int(re.sub("\D", "", oldstats[3])))
-
-        except Exception as e:
-            print("[!] Variable old stats does not exist yet; most likely first run")
-
-        try:
-            print("[*] Updated stats at:", datetime.datetime.now())
-            f = open("log.txt", "a")
-            status_line = "\nUK C: {0} ({1}) UK D: {2} ({3}) WW C: {4} ({5}) WW D: {6} ({7})"
-            formated_status_line = status_line.format(newstats[0], str(difference[0]), newstats[1], str(difference[1]), newstats[2], str(difference[2]), newstats[3], str(difference[3])).replace("\n", "")
-            f.write("\n")
-            f.write(formated_status_line)
-            f.close()
-
-        except Exception as e:
-            print("[!] Error:", e)
-            continue
-
-        time.sleep(300)
+    args = parser.parse_args()
+    if args.label:
+        label = args.label
+    if not args.label and args.country:
+        label = args.country
+    
+    try:
+        (infection_count, death_count) = getStatsForCountry(args.country)
+        print(write_stats(label, infection_count, death_count))
+    except Exception as e:
+        print("[!] Error:", e)
 
 if __name__ == '__main__':
     main()
