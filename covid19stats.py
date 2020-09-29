@@ -12,6 +12,8 @@ country = "country/"
 def getStatsForCountry(countryCode):
     if not countryCode:
         return getStatusForUrl(baseUrl)
+    if "usa/" in countryCode:
+        return getStatusForUrl(baseUrl + countryCode)
     return getStatusForUrl(baseUrl + country + countryCode)
 
 def getStatusForUrl(url):

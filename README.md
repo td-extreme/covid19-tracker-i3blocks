@@ -18,8 +18,8 @@ label=U.K.
 command=$SCRIPT/covid19-count-i3blocks/covid19stats.py uk
 interval=3600
 
-[covid19-china]
-label=China
-command=$SCRIPT/covid19-count-i3blocks/covid19stats.py china
+[covid19-usa-ny]
+label=NY
+command=$SCRIPT/covid19-count-i3blocks/covid19stats.py usa/new-york
 interval=3600
 ```
